@@ -5,9 +5,10 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      # Install dependencies in the correct directory
+      # Echo the current directory contents to help verify the project structure
       - echo "Current directory contents:"
       - ls -la
+      # Install dependencies in the correct directory
       - npm install
 
   pre_build:
@@ -15,12 +16,12 @@ phases:
       - echo "Starting pre-build phase"
       - pwd
       - echo "Directory contents:"
-      - ls -la
+      - ls -la  # Confirm that package.json exists in the current directory
 
   build:
     commands:
       - echo "Starting build phase"
-      - npm run build
+      - npm run build  # Build the project
       # Create server.js for serving the static files
       - |
         cat << EOF > server.js
@@ -39,7 +40,7 @@ phases:
           console.log(\`Server is running on port \${PORT}\`);
         });
         EOF
-      # Update package.json for production
+      # Update package.json for production (ensuring express is added)
       - |
         node -e "
           const fs = require('fs');
