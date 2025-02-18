@@ -5,11 +5,20 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
+      # Print working directory and list files for debugging
+      - pwd
+      - ls -la
+      # Copy files to the correct location if needed
+      - cp -r . /codebuild/output/src3678081935/src/ || true
+      - cd /codebuild/output/src3678081935/src/
+      - pwd
+      - ls -la
       - npm install
 
   pre_build:
     commands:
       - echo "Starting build phase"
+      - pwd
 
   build:
     commands:
@@ -63,9 +72,9 @@ artifacts:
     - 'server.js'
     - 'package.json'
     - 'package-lock.json'
-  base-directory: '.'
+  base-directory: '/codebuild/output/src3678081935/src'
   discard-paths: no
 
 cache:
   paths:
-    - 'node_modules/**/*'
+    - '/codebuild/output/src3678081935/src/node_modules/**/*'
