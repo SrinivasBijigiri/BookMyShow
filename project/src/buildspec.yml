@@ -7,18 +7,63 @@ phases:
     commands:
       - npm install
 
+  pre_build:
+    commands:
+      - echo "Starting build phase"
+
   build:
     commands:
       - npm run build
+      # Create necessary files for Elastic Beanstalk
+      - echo "Creating Elastic Beanstalk configuration files"
+      - mkdir -p .ebextensions
+      - |
+        cat << EOF > .ebextensions/nodecommand.config
+        option_settings:
+          aws:elasticbeanstalk:container:nodejs:
+            NodeCommand: "npm start"
+        EOF
+      # Create a server.js file to serve the static files
+      - |
+        cat << EOF > server.js
+        const express = require('express');
+        const path = require('path');
+        const app = express();
+        const PORT = process.env.PORT || 8080;
+
+        app.use(express.static(path.join(__dirname, 'dist')));
+
+        app.get('*', (req, res) => {
+          res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+        });
+
+        app.listen(PORT, () => {
+          console.log(\`Server is running on port \${PORT}\`);
+        });
+        EOF
 
   post_build:
     commands:
+      - echo "Updating package.json for production"
+      - |
+        node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json'));
+          pkg.scripts.start = 'node server.js';
+          pkg.dependencies = pkg.dependencies || {};
+          pkg.dependencies.express = '^4.18.2';
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+        "
       - echo "Build completed successfully!"
 
 artifacts:
   files:
     - '**/*'
-  base-directory: 'dist'
+    - '.ebextensions/**/*'
+    - 'server.js'
+    - 'package.json'
+    - 'package-lock.json'
+  base-directory: '.'
   discard-paths: no
 
 cache:
