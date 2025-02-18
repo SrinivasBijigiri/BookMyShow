@@ -5,34 +5,24 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      # Print working directory and list files for debugging
-      - pwd
-      - ls -la
-      # Copy files to the correct location if needed
-      - cp -r . /codebuild/output/src3678081935/src/ || true
-      - cd /codebuild/output/src3678081935/src/
-      - pwd
-      - ls -la
+      # Navigate to the correct source directory and list its contents for debugging
+      - cd $CODEBUILD_SRC_DIR
+      - echo "Listing contents of the source directory:"
+      - ls -la  # Debug: List directory contents to verify package.json exists
+      - if [ ! -f package.json ]; then echo "package.json not found!"; exit 1; fi  # Check if package.json exists
       - npm install
 
   pre_build:
     commands:
       - echo "Starting build phase"
-      - pwd
+      - pwd  # Debug: Print working directory
+      - ls -la  # Debug: List contents again to confirm package.json is still present
 
   build:
     commands:
+      # Run the build process
       - npm run build
-      # Create necessary files for Elastic Beanstalk
-      - echo "Creating Elastic Beanstalk configuration files"
-      - mkdir -p .ebextensions
-      - |
-        cat << EOF > .ebextensions/nodecommand.config
-        option_settings:
-          aws:elasticbeanstalk:container:nodejs:
-            NodeCommand: "npm start"
-        EOF
-      # Create a server.js file to serve the static files
+      # Create server.js to serve the static files after build
       - |
         cat << EOF > server.js
         const express = require('express');
@@ -50,10 +40,7 @@ phases:
           console.log(\`Server is running on port \${PORT}\`);
         });
         EOF
-
-  post_build:
-    commands:
-      - echo "Updating package.json for production"
+      # Update package.json to add the start script and express dependency
       - |
         node -e "
           const fs = require('fs');
@@ -63,18 +50,14 @@ phases:
           pkg.dependencies.express = '^4.18.2';
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
         "
+
+  post_build:
+    commands:
       - echo "Build completed successfully!"
+      - ls -la  # Debug: List final directory contents to confirm everything is in place
 
 artifacts:
+  base-directory: $CODEBUILD_SRC_DIR/dist  # Output the build directory (dist)
   files:
     - '**/*'
-    - '.ebextensions/**/*'
-    - 'server.js'
-    - 'package.json'
-    - 'package-lock.json'
-  base-directory: '/codebuild/output/src3678081935/src'
   discard-paths: no
-
-cache:
-  paths:
-    - '/codebuild/output/src3678081935/src/node_modules/**/*'
