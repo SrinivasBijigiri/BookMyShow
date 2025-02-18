@@ -6,10 +6,9 @@ phases:
       nodejs: 20
     commands:
       # Navigate to the correct source directory and list its contents for debugging
-      - cd $CODEBUILD_SRC_DIR
-      - echo "Listing contents of the source directory:"
-      - ls -la  # Debug: List directory contents to verify package.json exists
-      - if [ ! -f package.json ]; then echo "package.json not found!"; exit 1; fi  # Check if package.json exists
+      - cd $CODEBUILD_SRC_DIR/project  # Adjust this path as needed
+      - ls -la  # Debug: Verify the presence of package.json
+      - if [ ! -f package.json ]; then echo "package.json not found!"; exit 1; fi
       - npm install
 
   pre_build:
