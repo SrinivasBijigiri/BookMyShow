@@ -5,23 +5,23 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      # Navigate to the correct source directory and list its contents for debugging
-      - cd $CODEBUILD_SRC_DIR/project  # Adjust this path as needed
-      - ls -la  # Debug: Verify the presence of package.json
-      - if [ ! -f package.json ]; then echo "package.json not found!"; exit 1; fi
+      # Install dependencies in the correct directory
+      - echo "Current directory contents:"
+      - ls -la
       - npm install
 
   pre_build:
     commands:
-      - echo "Starting build phase"
-      - pwd  # Debug: Print working directory
-      - ls -la  # Debug: List contents again to confirm package.json is still present
+      - echo "Starting pre-build phase"
+      - pwd
+      - echo "Directory contents:"
+      - ls -la
 
   build:
     commands:
-      # Run the build process
+      - echo "Starting build phase"
       - npm run build
-      # Create server.js to serve the static files after build
+      # Create server.js for serving the static files
       - |
         cat << EOF > server.js
         const express = require('express');
@@ -39,7 +39,7 @@ phases:
           console.log(\`Server is running on port \${PORT}\`);
         });
         EOF
-      # Update package.json to add the start script and express dependency
+      # Update package.json for production
       - |
         node -e "
           const fs = require('fs');
@@ -49,14 +49,16 @@ phases:
           pkg.dependencies.express = '^4.18.2';
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
         "
+      - npm install # Install express after adding it to package.json
 
   post_build:
     commands:
       - echo "Build completed successfully!"
-      - ls -la  # Debug: List final directory contents to confirm everything is in place
+      - echo "Final directory contents:"
+      - ls -la
 
 artifacts:
-  base-directory: $CODEBUILD_SRC_DIR/dist  # Output the build directory (dist)
   files:
     - '**/*'
+  base-directory: '.'
   discard-paths: no
